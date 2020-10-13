@@ -141,7 +141,6 @@ def top_files(query, files, idfs, n):
         # remove doc from dict
         del doc_value_tracker[doc_to_be_appened]
 
-    print(ranked_docs)
     return ranked_docs
 
 
@@ -153,7 +152,58 @@ def top_sentences(query, sentences, idfs, n):
     the query, ranked according to idf. If there are ties, preference should
     be given to sentences that have a higher query term density.
     """
-    raise NotImplementedError
+    # create an empty dict to keep track of value scores for each document
+    sentence_value_tracker = dict()
+    # loop over every document
+    for sentence in sentences:
+        sentence_value_tracker[sentence] = 0
+        # Loop over every word in set
+        for word in query:
+            if word in sentences[sentence]:
+                # calculate idf for the word
+                word_idf = idfs[word]
+                # update sentence score in the dict
+                sentence_value_tracker[sentence] = sentence_value_tracker[sentence] + word_idf
+
+    ranked_sentences = []
+    while len(sentence_value_tracker) != 0:
+        if len(ranked_sentences) == n:
+            break
+        highest_score = 0
+        sentence_to_be_appened = None
+        for sentence in sentence_value_tracker:
+            if sentence_value_tracker[sentence] > highest_score:
+                highest_score = sentence_value_tracker[sentence]
+                sentence_to_be_appened = sentence
+            # if sentence score is equal to highest score, prioritise according to query term densitiy
+            elif sentence_value_tracker[sentence] == highest_score:
+                # continue if sentence_to_be_appened is None
+                if highest_score == 0:
+                    continue
+
+                # check query term density for the sentence to be appended
+                non_query_word_count = len(sentences[sentence_to_be_appened])
+                query_word_count = 0
+                for word in query:
+                    query_word_count = query_word_count + sentences[sentence_to_be_appened].count(word)
+
+                old_sentence_term_density = query_word_count / non_query_word_count
+                # check query term density for the loop sentence
+                non_query_word_count = len(sentences[sentence])
+                query_word_count = 0
+                for word in query:
+                    query_word_count = query_word_count + sentences[sentence].count(word)
+
+                new_sentence_term_density = query_word_count / non_query_word_count
+                
+                if new_sentence_term_density > old_sentence_term_density:
+                    sentence_to_be_appened = sentence
+        
+        ranked_sentences.append(sentence_to_be_appened)
+        # remove doc from dict
+        del sentence_value_tracker[sentence_to_be_appened]
+
+    return ranked_sentences
 
 
 if __name__ == "__main__":
